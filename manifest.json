@@ -1,0 +1,15 @@
+{
+  "name": "The Arc Spinner",
+  "short_name": "Arc Spinner",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#09090d",
+  "theme_color": "#09090d",
+  "icons": [
+    {
+      "src": "preview.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

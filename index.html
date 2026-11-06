@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>The Arc Spinner</title>
+
+  <!-- PWA & Native App Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#09090d">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Arc Spinner">
+  <meta property="og:url" content="https://prasannaone.github.io/The-Arc-Spinner/">
+  <meta property="og:image" content="https://prasannaone.github.io/The-Arc-Spinner/preview.png">
+
+  <style>
+    :root {
+      --bg: #09090d;
+      --card-bg: #121218;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --accent: #a855f7;
+      --spinner-c1: #a855f7;
+      --spinner-c2: #6366f1;
+      --spinner-c3: #ec4899;
+      --center-cap: #ffffff;
+    }
+
+    body.light-mode {
+      --bg: #f4f4f6;
+      --card-bg: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.12);
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --accent: #7c3aed;
+      --spinner-c1: #8b5cf6;
+      --spinner-c2: #6366f1;
+      --spinner-c3: #db2777;
+      --center-cap: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background 0.3s ease, color 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px 20px calc(24px + env(safe-area-inset-bottom, 12px)) 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px 0;
+      z-index: 5;
+    }
+
+    .title {
+      font-size: clamp(17px, 4.5vw, 20px);
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      padding: 4px 0;
+      white-space: nowrap;
+    }
+
+    .title-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      display: inline-block;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .title-dot.zero-g {
+      background: #06b6d4;
+      box-shadow: 0 0 12px #06b6d4;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: var(--card-border);
+      color: var(--text-main);
+    }
+
+    /* Arena */
+    .arena {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+
+    /* Spinner - Slightly larger base size */
+    .spinner-wrapper {
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      touch-action: none;
+      will-change: transform;
+    }
+
+    .spinner-wrapper:active {
+      cursor: grabbing;
+    }
+
+    .spinner-body {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+      filter: drop-shadow(0 16px 34px rgba(0, 0, 0, 0.45));
+    }
+
+    /* Asymmetric Layered Blades: One blade is slightly longer / distinct for rich kinetic depth */
+    .spinner-blade {
+      position: absolute;
+      width: 54px;
+      height: 152px;
+      background: var(--spinner-c1);
+      border-radius: 27px;
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      box-shadow: inset 0 2px 9px rgba(255,255,255,0.35), inset 0 -6px 14px rgba(0,0,0,0.4);
+    }
+    .spinner-blade:nth-child(1) { 
+      transform: translate(-50%, -50%) rotate(0deg) translateY(-3px) scaleY(1.06); 
+      background: linear-gradient(180deg, var(--spinner-c1), rgba(255,255,255,0.15)); 
+      z-index: 2;
+    }
+    .spinner-blade:nth-child(2) { 
+      transform: translate(-50%, -50%) rotate(120deg) translateY(-2px); 
+      background: var(--spinner-c2); 
+      z-index: 1;
+    }
+    .spinner-blade:nth-child(3) { 
+      transform: translate(-50%, -50%) rotate(240deg) translateY(-2px); 
+      background: var(--spinner-c3); 
+      z-index: 1;
+    }
+
+    .center-cap {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      background: var(--center-cap);
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45), inset 0 2px 6px rgba(255,255,255,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .center-dot {
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Backdrop & Sheets */
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+      z-index: 100;
+    }
+
+    .backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom, 8px));
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(115%);
+      transition: transform 0.26s cubic-bezier(0.2, 0.9, 0.3, 1);
+      z-index: 110;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+      max-height: 82dvh;
+    }
+
+    .sheet.open {
+      transform: translateY(0);
+    }
+
+    .sheet-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .sheet-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .sheet-body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-top: 14px;
+      padding-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      touch-action: pan-y;
+      scrollbar-width: none;
+    }
+    .sheet-body::-webkit-scrollbar {
+      display: none;
+    }
+
+    .small-btn {
+      background: var(--card-border);
+      border: none;
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .small-btn:active {
+      transform: scale(0.95);
+    }
+
+    .setting-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+    }
+
+    .setting-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .palette-btn {
+      height: 40px;
+      border-radius: 12px;
+      border: 2px solid var(--card-border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .palette-btn.active {
+      border-color: var(--text-main);
+      transform: scale(1.06);
+    }
+
+    .palette-btn:active {
+      transform: scale(0.93);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      cursor: pointer;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background-color: var(--card-border);
+      transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 26px;
+      border: 1px solid var(--card-border);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--text-sub);
+      transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+      background-color: #ffffff;
+    }
+
+    .creator-card {
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .made-by {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+
+    .made-by span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .social-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .social-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-decoration: none;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: var(--bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      transition: transform 0.1s ease;
+    }
+
+    .social-link:active {
+      transform: scale(0.97);
+    }
+
+    .social-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .social-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(168, 85, 247, 0.12);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .social-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .social-handle {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+  </style>
+</head>
+<body id="bodyRoot">
+
+  <div class="container" id="containerEl">
+    <div class="header">
+      <div class="title" onclick="handleTitleTap()">
+        <span>The Arc Spinner</span>
+        <span class="title-dot" id="modeDot"></span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="vibe(); shareApp()" aria-label="Share">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+        </button>
+        <button class="icon-btn" onclick="vibe(); openInfoSheet()" aria-label="Settings & Info">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Arena -->
+    <div class="arena" id="arenaEl">
+      <div class="spinner-wrapper" id="spinnerWrapper">
+        <div class="spinner-body" id="spinnerBody">
+          <div class="spinner-blade"></div>
+          <div class="spinner-blade"></div>
+          <div class="spinner-blade"></div>
+          <div class="center-cap">
+            <div class="center-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backdrop & Info/Settings Sheet -->
+    <div class="backdrop" id="backdrop" onclick="closeSheet()"></div>
+
+    <div class="sheet" id="infoSheet">
+      <div class="sheet-top">
+        <span class="sheet-title">Settings & About</span>
+        <button class="small-btn" onclick="vibe(); closeSheet()">Done</button>
+      </div>
+      <div class="sheet-body" id="sheetBody">
+        
+        <div class="creator-card">
+          <div class="made-by">The Arc Spinner <span>by Prasanna</span></div>
+          <div class="tagline">Pure haptic physics & kinetic fidget widget.</div>
+        </div>
+
+        <div class="setting-section-title">Color Palettes</div>
+        <div class="palette-grid">
+          <button class="palette-btn" style="background: linear-gradient(135deg, #a855f7, #6366f1);" onclick="setPalette('violet')" id="pal-violet"></button>
+          <button class="palette-btn" style="background: linear-gradient(135deg, #f97316, #ef4444);" onclick="setPalette('sunset')" id="pal-sunset"></button>
+          <button class="palette-btn" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);" onclick="setPalette('cyan')" id="pal-cyan"></button>
+          <button class="palette-btn" style="background: linear-gradient(135deg, #eab308, #22c55e);" onclick="setPalette('solar')" id="pal-solar"></button>
+          <button class="palette-btn" style="background: linear-gradient(135deg, #71717a, #27272a);" onclick="setPalette('mono')" id="pal-mono"></button>
+        </div>
+
+        <div class="setting-section-title">Preferences</div>
+        <div class="setting-row">
+          <span class="setting-label">Dark / Light Mode</span>
+          <label class="switch">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">Haptic Feedback</span>
+          <label class="switch">
+            <input type="checkbox" id="hapticsToggle" onchange="toggleHaptics(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">Tactile Audio Clicks</span>
+          <label class="switch">
+            <input type="checkbox" id="audioToggle" onchange="toggleAudio(this)">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-section-title">Links</div>
+        <div class="social-links">
+          <a class="social-link" href="https://github.com/PrasannaOne" target="_blank" rel="noopener noreferrer" onclick="vibe()">
+            <div class="social-left">
+              <div class="social-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+              </div>
+              <div>
+                <div class="social-label">GitHub</div>
+                <div class="social-handle">github.com/PrasannaOne</div>
+              </div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+          <a class="social-link" href="https://t.me/prasannaone" target="_blank" rel="noopener noreferrer" onclick="vibe()">
+            <div class="social-left">
+              <div class="social-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </div>
+              <div>
+                <div class="social-label">Telegram</div>
+                <div class="social-handle">@prasannaone</div>
+              </div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    const bodyEl = document.getElementById('bodyRoot');
+    const containerEl = document.getElementById('containerEl');
+    const arenaEl = document.getElementById('arenaEl');
+    const spinnerWrapper = document.getElementById('spinnerWrapper');
+    const spinnerBody = document.getElementById('spinnerBody');
+    const modeDotEl = document.getElementById('modeDot');
+    const backdropEl = document.getElementById('backdrop');
+    const infoSheetEl = document.getElementById('infoSheet');
+    const sheetBody = document.getElementById('sheetBody');
+
+    const hapticsToggle = document.getElementById('hapticsToggle');
+    const audioToggle = document.getElementById('audioToggle');
+    const themeToggle = document.getElementById('themeToggle');
+
+    let hapticsEnabled = localStorage.getItem('arc_haptics') !== 'false';
+    let audioEnabled = localStorage.getItem('arc_audio') === 'true';
+    let isLightMode = localStorage.getItem('arc_light') === 'true';
+    let currentPalette = localStorage.getItem('arc_palette') || 'violet';
+
+    hapticsToggle.checked = hapticsEnabled;
+    audioToggle.checked = audioEnabled;
+    themeToggle.checked = isLightMode;
+    if (isLightMode) bodyEl.classList.add('light-mode');
+
+    applyPalette(currentPalette);
+
+    let audioCtx = null;
+    let nextAudioTime = 0;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playClickSound(intensity = 1) {
+      if (!audioEnabled) return;
+      initAudio();
+      const now = audioCtx.currentTime;
+      if (now < nextAudioTime) return;
+      nextAudioTime = now + 0.025;
+
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160 + intensity * 100, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.02);
+
+        gain.gain.setValueAtTime(0.08 * intensity, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.02);
+      } catch (e) {}
+    }
+
+    let lastVibeTime = 0;
+    function vibe(ms = 2) {
+      if (!hapticsEnabled || !navigator.vibrate) return;
+      const now = performance.now();
+      if (now - lastVibeTime < 45) return;
+      lastVibeTime = now;
+      navigator.vibrate(ms);
+    }
+
+    let rotation = 0;
+    let angularVelocity = 0;
+    let friction = 0.986;
+
+    let posX = 0;
+    let posY = 0;
+    let velX = 0;
+    let velY = 0;
+
+    let isDraggingSpinner = false;
+    let isSwipingScreen = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    let lastMoveTime = 0;
+    let lastAngle = 0;
+    let zeroGravity = false;
+    let tapCount = 0;
+    let tapTimer = null;
+    let lastTickAngle = 0;
+
+    const stiffness = 0.012; 
+    const damping = 0.92;    
+
+    function handleTitleTap() {
+      tapCount++;
+      clearTimeout(tapTimer);
+      if (tapCount >= 3) {
+        tapCount = 0;
+        zeroGravity = !zeroGravity;
+        modeDotEl.classList.toggle('zero-g', zeroGravity);
+        friction = zeroGravity ? 0.9995 : 0.986;
+        vibe(zeroGravity ? [15, 30, 15] : 12);
+      } else {
+        tapTimer = setTimeout(() => { tapCount = 0; }, 450);
+      }
+    }
+
+    // Omni-directional swipe gesture across the screen or drag on spinner
+    arenaEl.addEventListener('pointerdown', (e) => {
+      initAudio();
+      const rect = spinnerWrapper.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+
+      if (dist <= 105) {
+        isDraggingSpinner = true;
+        isSwipingScreen = false;
+        dragStartX = e.clientX - posX;
+        dragStartY = e.clientY - posY;
+      } else {
+        isSwipingScreen = true;
+        isDraggingSpinner = false;
+        lastAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
+      }
+
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+      lastMoveTime = performance.now();
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDraggingSpinner && !isSwipingScreen) return;
+
+      const now = performance.now();
+      const dt = Math.max(now - lastMoveTime, 1);
+      lastMoveTime = now;
+
+      if (isDraggingSpinner) {
+        posX = e.clientX - dragStartX;
+        posY = e.clientY - dragStartY;
+
+        velX = (e.clientX - lastPointerX) / dt * 14;
+        velY = (e.clientY - lastPointerY) / dt * 14;
+      } else if (isSwipingScreen) {
+        const rect = spinnerWrapper.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        
+        const currentAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
+        let delta = (currentAngle - lastAngle) * (180 / Math.PI);
+        
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+
+        angularVelocity = delta * 0.95;
+        rotation += delta;
+        lastAngle = currentAngle;
+
+        if (Math.abs(angularVelocity) > 2.0) {
+          vibe(2);
+          playClickSound(Math.min(Math.abs(angularVelocity) / 20, 1));
+        }
+      }
+
+      lastPointerX = e.clientX;
+      lastPointerY = e.clientY;
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (isDraggingSpinner) {
+        const dx = e.clientX - lastPointerX;
+        const dy = e.clientY - lastPointerY;
+        velX += dx * 0.45;
+        velY += dy * 0.45;
+      }
+      isDraggingSpinner = false;
+      isSwipingScreen = false;
+    });
+
+    function updatePhysics() {
+      if (!isDraggingSpinner) {
+        const forceX = -stiffness * posX;
+        const forceY = -stiffness * posY;
+        velX = (velX + forceX) * damping;
+        velY = (velY + forceY) * damping;
+        posX += velX;
+        posY += velY;
+      }
+
+      if (Math.abs(angularVelocity) > 0.01) {
+        rotation += angularVelocity;
+        angularVelocity *= friction;
+
+        if (Math.abs(rotation - lastTickAngle) >= 18) {
+          lastTickAngle = rotation;
+          vibe(2);
+          playClickSound(Math.min(Math.abs(angularVelocity) / 22, 1));
+        }
+      }
+
+      // Pop larger (1.25x) when touched/dragged
+      const scale = isDraggingSpinner ? 1.25 : 1.0;
+      spinnerWrapper.style.transform = `translate3d(${posX}px, ${posY}px, 0) scale(${scale})`;
+      spinnerBody.style.transform = `rotate(${rotation}deg)`;
+
+      requestAnimationFrame(updatePhysics);
+    }
+    requestAnimationFrame(updatePhysics);
+
+    function openInfoSheet() {
+      infoSheetEl.classList.add('open');
+      backdropEl.classList.add('open');
+    }
+
+    function closeSheet() {
+      infoSheetEl.classList.remove('open');
+      backdropEl.classList.remove('open');
+    }
+
+    sheetBody.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+
+    function toggleHaptics(el) {
+      hapticsEnabled = el.checked;
+      localStorage.setItem('arc_haptics', hapticsEnabled);
+      if (hapticsEnabled) vibe(6);
+    }
+
+    function toggleAudio(el) {
+      audioEnabled = el.checked;
+      localStorage.setItem('arc_audio', audioEnabled);
+      if (audioEnabled) {
+        initAudio();
+        playClickSound(1);
+      }
+    }
+
+    function toggleTheme(el) {
+      isLightMode = el.checked;
+      localStorage.setItem('arc_light', isLightMode);
+      bodyEl.classList.toggle('light-mode', isLightMode);
+      vibe(4);
+    }
+
+    function setPalette(pal) {
+      currentPalette = pal;
+      localStorage.setItem('arc_palette', pal);
+      applyPalette(pal);
+      vibe(5);
+    }
+
+    function applyPalette(pal) {
+      document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+      const activePal = document.getElementById(`pal-${pal}`);
+      if (activePal) activePal.classList.add('active');
+
+      const root = document.documentElement;
+      if (pal === 'violet') {
+        root.style.setProperty('--spinner-c1', '#a855f7');
+        root.style.setProperty('--spinner-c2', '#6366f1');
+        root.style.setProperty('--spinner-c3', '#ec4899');
+        root.style.setProperty('--accent', '#a855f7');
+      } else if (pal === 'sunset') {
+        root.style.setProperty('--spinner-c1', '#f97316');
+        root.style.setProperty('--spinner-c2', '#ef4444');
+        root.style.setProperty('--spinner-c3', '#eab308');
+        root.style.setProperty('--accent', '#f97316');
+      } else if (pal === 'cyan') {
+        root.style.setProperty('--spinner-c1', '#06b6d4');
+        root.style.setProperty('--spinner-c2', '#3b82f6');
+        root.style.setProperty('--spinner-c3', '#6366f1');
+        root.style.setProperty('--accent', '#06b6d4');
+      } else if (pal === 'solar') {
+        root.style.setProperty('--spinner-c1', '#eab308');
+        root.style.setProperty('--spinner-c2', '#22c55e');
+        root.style.setProperty('--spinner-c3', '#f97316');
+        root.style.setProperty('--accent', '#eab308');
+      } else if (pal === 'mono') {
+        root.style.setProperty('--spinner-c1', '#71717a');
+        root.style.setProperty('--spinner-c2', '#3f3f46');
+        root.style.setProperty('--spinner-c3', '#a1a1aa');
+        root.style.setProperty('--accent', '#71717a');
+      }
+    }
+
+    function shareApp() {
+      const shareUrl = 'https://prasannaone.github.io/The-Arc-Spinner/';
+      const shareText = 'Fidget with The Arc Spinner 🌀 — pure physics, haptics, and zero distractions. ' + shareUrl;
+
+      if (navigator.share) {
+        navigator.share({ text: shareText, url: shareUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareText).then(() => {
+          alert('Link copied to clipboard!');
+        });
+      }
+    }
+  </script>
+</body>
+</html>
